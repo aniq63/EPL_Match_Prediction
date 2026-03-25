@@ -87,7 +87,7 @@ class FeatureEngineering:
             raise RuntimeError(f"Basic feature step failed: {e}")
 
     # ============================================================
-    # STEP 2 — Rolling Features (timeline approach)
+    # STEP 2 — Rolling Averages (last 5, unified team timeline)
     # ============================================================
     def rolling_features(self):
         try:
@@ -100,7 +100,7 @@ class FeatureEngineering:
                 "xg", "ppda", "deep_completions",
             ]
 
-            # ---- Build timeline ----
+            # ---- Build unified team timeline ----
             home = df[[
                 "date", "home_team",
                 "home_goals", "home_goals_conceded",
@@ -132,7 +132,7 @@ class FeatureEngineering:
             tl = pd.concat([home, away], ignore_index=True)
             tl.sort_values(["team", "date"], inplace=True)
 
-            # ---- Rolling ----
+            # ---- Rolling averages ----
             grp = tl.groupby("team")
             for col in STAT_COLS:
                 tl[f"{col}_avg_last5"] = (
@@ -147,24 +147,27 @@ class FeatureEngineering:
             tl.dropna(subset=avg_cols, inplace=True)
             logging.info(f"Timeline: {before} -> {len(tl)} (rolling drop)")
 
-            # ---- Merge ----
+            # ---- Merge back: LEFT join then explicit NaN drop ----
             keep = ["date", "team"] + avg_cols
 
             home_avgs = tl[tl["venue"] == "home"][keep].rename(
                 columns={"team": "home_team",
                          **{c: f"home_{c}" for c in avg_cols}}
             )
-
             away_avgs = tl[tl["venue"] == "away"][keep].rename(
                 columns={"team": "away_team",
                          **{c: f"away_{c}" for c in avg_cols}}
             )
 
+            n0 = len(df)
             df = df.merge(home_avgs, on=["date", "home_team"], how="left")
             df = df.merge(away_avgs, on=["date", "away_team"], how="left")
+            assert len(df) == n0, f"Rolling merge changed row count {n0} -> {len(df)}"
 
+            drop_cols = ([f"home_{c}" for c in avg_cols] +
+                         [f"away_{c}" for c in avg_cols])
             before = len(df)
-            df.dropna(inplace=True)
+            df.dropna(subset=drop_cols, inplace=True)
             logging.info(f"Matches dropped (rolling window): {before - len(df)}")
 
             self.df = df
@@ -200,24 +203,28 @@ class FeatureEngineering:
                 .reset_index(0, drop=True)
             )
 
-            tm.dropna(inplace=True)
+            tm.dropna(subset=["pts_last5"], inplace=True)
+            pts_cols = ["date", "team", "pts_last5"]
+            n0 = len(df)
 
             df = df.merge(
-                tm[["date", "team", "pts_last5"]],
-                left_on=["date", "home_team"],
-                right_on=["date", "team"],
-                how="left"
+                tm[pts_cols], left_on=["date", "home_team"],
+                right_on=["date", "team"], how="left"
             ).rename(columns={"pts_last5": "home_points_last5"}).drop(columns="team")
 
+            assert len(df) == n0, \
+                f"Home points merge changed row count {n0} -> {len(df)}. Duplicate keys?"
+
             df = df.merge(
-                tm[["date", "team", "pts_last5"]],
-                left_on=["date", "away_team"],
-                right_on=["date", "team"],
-                how="left"
+                tm[pts_cols], left_on=["date", "away_team"],
+                right_on=["date", "team"], how="left"
             ).rename(columns={"pts_last5": "away_points_last5"}).drop(columns="team")
 
+            assert len(df) == n0, \
+                f"Away points merge changed row count {n0} -> {len(df)}. Duplicate keys?"
+
             before = len(df)
-            df.dropna(inplace=True)
+            df.dropna(subset=["home_points_last5", "away_points_last5"], inplace=True)
             logging.info(f"Points drop: {before - len(df)}")
 
             self.df = df
@@ -226,6 +233,116 @@ class FeatureEngineering:
 
         except Exception as e:
             raise RuntimeError(f"Points feature step failed: {e}")
+
+    # ============================================================
+    # STEP 4 — Venue-specific W/D/L form (last 5 home / away)
+    # ============================================================
+    def venue_form_rolling(self):
+        try:
+            self.tracker.before("venue_form_rolling", self.df)
+
+            df = self.df
+            n0 = len(df)
+
+            # ── Home-venue form ──
+            hg = df[["date", "home_team", "home_goals", "away_goals"]].copy()
+            hg.sort_values(["home_team", "date"], inplace=True)
+
+            hg["h_win"]  = (hg["home_goals"] > hg["away_goals"]).astype(int)
+            hg["h_draw"] = (hg["home_goals"] == hg["away_goals"]).astype(int)
+            hg["h_loss"] = (hg["home_goals"] < hg["away_goals"]).astype(int)
+
+            grp_h = hg.groupby("home_team")
+            hg["hw5"] = grp_h["h_win"].rolling(5,  closed="left").sum().reset_index(0, drop=True)
+            hg["hd5"] = grp_h["h_draw"].rolling(5, closed="left").sum().reset_index(0, drop=True)
+            hg["hl5"] = grp_h["h_loss"].rolling(5, closed="left").sum().reset_index(0, drop=True)
+            hg["hwr"] = hg["hw5"] / 5.0
+
+            df = df.merge(
+                hg[["date", "home_team", "hw5", "hd5", "hl5", "hwr"]],
+                on=["date", "home_team"], how="left"
+            )
+            assert len(df) == n0, \
+                f"Home venue merge changed row count {n0} -> {len(df)}."
+
+            # ── Away-venue form ──
+            # IMPORTANT: use ag (sorted by away_team+date), never reference hg here
+            ag = df[["date", "away_team", "away_goals", "home_goals"]].copy()
+            ag.sort_values(["away_team", "date"], inplace=True)
+
+            ag["a_win"]  = (ag["away_goals"] > ag["home_goals"]).astype(int)
+            ag["a_draw"] = (ag["away_goals"] == ag["home_goals"]).astype(int)
+            ag["a_loss"] = (ag["away_goals"] < ag["home_goals"]).astype(int)
+
+            grp_a = ag.groupby("away_team")
+            ag["aw5"] = grp_a["a_win"].rolling(5,  closed="left").sum().reset_index(0, drop=True)
+            ag["ad5"] = grp_a["a_draw"].rolling(5, closed="left").sum().reset_index(0, drop=True)
+            ag["al5"] = grp_a["a_loss"].rolling(5, closed="left").sum().reset_index(0, drop=True)
+            ag["awr"] = ag["aw5"] / 5.0
+
+            df = df.merge(
+                ag[["date", "away_team", "aw5", "ad5", "al5", "awr"]],
+                on=["date", "away_team"], how="left"
+            )
+            assert len(df) == n0, \
+                f"Away venue merge changed row count {n0} -> {len(df)}."
+
+            df.rename(columns={
+                "hw5": "home_team_home_wins_last5",
+                "hd5": "home_team_home_draws_last5",
+                "hl5": "home_team_home_losses_last5",
+                "aw5": "away_team_away_wins_last5",
+                "ad5": "away_team_away_draws_last5",
+                "al5": "away_team_away_losses_last5",
+            }, inplace=True)
+
+            df["home_venue_advantage"] = df["hwr"] - df["awr"]
+            df.drop(columns=["hwr", "awr"], inplace=True)
+
+            # Drop rows where neither team has 5 venue games yet
+            venue_cols = ["home_team_home_wins_last5", "away_team_away_wins_last5"]
+            before = len(df)
+            df.dropna(subset=venue_cols, inplace=True)
+            logging.info(f"Venue NaN drop: {before - len(df)} rows "
+                         f"(teams with <5 home or away games)")
+
+            self.df = df
+            self.tracker.after(self.df, "NaN rows = teams with <5 venue-specific games")
+            return self
+
+        except Exception as e:
+            raise RuntimeError(f"Venue form feature step failed: {e}")
+
+    # ============================================================
+    # STEP 5 — Derived difference features
+    # ============================================================
+    def derived_features(self):
+        try:
+            self.tracker.before("derived_features", self.df)
+
+            df = self.df
+
+            df["points_diff_last5"]   = df["home_points_last5"]               - df["away_points_last5"]
+            df["goal_diff_avg5"]      = df["home_goals_avg_last5"]            - df["away_goals_avg_last5"]
+            df["xg_diff_avg5"]        = df["home_xg_avg_last5"]               - df["away_xg_avg_last5"]
+            df["x_defense_diff"]      = df["away_goals_conceded_avg_last5"]   - df["home_goals_conceded_avg_last5"]
+            df["ppda_diff_avg5"]      = df["home_ppda_avg_last5"]             - df["away_ppda_avg_last5"]
+            df["deep_comp_diff_avg5"] = df["home_deep_completions_avg_last5"] - df["away_deep_completions_avg_last5"]
+            df["venue_wins_diff"]     = df["home_team_home_wins_last5"]       - df["away_team_away_wins_last5"]
+            df["home_advantage"]      = 1
+
+            df.sort_values("date", inplace=True)
+            df.reset_index(drop=True, inplace=True)
+
+            logging.info(f"Derived features added. Final shape: {df.shape}")
+            logging.info(f"Final columns: {list(df.columns)}")
+
+            self.df = df
+            self.tracker.after(self.df, "pure computation — no rows should be lost")
+            return self
+
+        except Exception as e:
+            raise RuntimeError(f"Derived feature step failed: {e}")
 
     # ============================================================
     # FINAL RUN
@@ -237,10 +354,13 @@ class FeatureEngineering:
             self.basic_features()
                 .rolling_features()
                 .points_last5()
+                .venue_form_rolling()
+                .derived_features()
                 .df
         )
 
         logging.info("\n========== PIPELINE COMPLETE ==========")
         self.tracker.print_audit()
+        logging.info(f"Transformed data had {result.shape[0]} samples and {result.shape[1]} Columns")
 
         return result

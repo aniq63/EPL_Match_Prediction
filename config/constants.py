@@ -72,3 +72,28 @@ LOG_BACKUP_COUNT = 5
 
 # Log file name
 LOG_FILE_NAME = "app.log"
+
+
+# ============================================================
+# Constants used in training
+# ============================================================
+
+MODEL_NAME      = "AdaBoostClassifier"
+RESULT_CLASSES  = ["Win", "Draw", "Lose"]
+N_ITER          = 50
+CV_FOLDS        = 5
+RANDOM_STATE    = 42
+SCORING         = "accuracy"
+
+
+INPUT_FEATURES = [
+    "home_goals_avg_last5","away_goals_avg_last5","home_goals_conceded_avg_last5",
+    "away_goals_conceded_avg_last5","home_xg_avg_last5","away_xg_avg_last5",
+    "home_ppda_avg_last5","away_ppda_avg_last5","home_deep_completions_avg_last5",
+    "away_deep_completions_avg_last5","home_points_last5","away_points_last5",
+    "home_team_home_wins_last5","home_team_home_draws_last5","home_team_home_losses_last5",
+    "away_team_away_wins_last5","away_team_away_draws_last5","away_team_away_losses_last5",
+    "points_diff_last5","goal_diff_avg5","xg_diff_avg5","x_defense_diff",
+    "ppda_diff_avg5","deep_comp_diff_avg5","venue_wins_diff","home_venue_advantage",
+    "home_advantage"
+]
