@@ -1,0 +1,27 @@
+soccerdata
+lxml>=5.2.0
+ipykernel
+pandas
+numpy
+matplotlib
+plotly
+seaborn
+scikit-learn==1.6.1
+pymongo
+from_root
+dill
+certifi
+PyYAML
+boto3
+mypy-boto3-s3
+botocore
+fastapi
+python-multipart
+uvicorn
+jinja2
+imblearn
+sqlalchemy
+pydantic-settings
+asyncpg
+psycopg2-binary
+-e .
