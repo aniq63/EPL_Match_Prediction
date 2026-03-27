@@ -83,7 +83,7 @@ RESULT_CLASSES  = ["Win", "Draw", "Lose"]
 N_ITER          = 50
 CV_FOLDS        = 5
 RANDOM_STATE    = 42
-SCORING         = "accuracy"
+SCORING         = "f1_macro"
 
 
 INPUT_FEATURES = [
@@ -97,3 +97,8 @@ INPUT_FEATURES = [
     "ppda_diff_avg5","deep_comp_diff_avg5","venue_wins_diff","home_venue_advantage",
     "home_advantage"
 ]
+# ============================================================
+# Splitting Configuration
+# ============================================================
+
+TEST_SIZE_WEEKS = 6

@@ -1,16 +1,17 @@
 from datetime import datetime, timedelta
 import pandas as pd
 from src.utils.logger import logging
+from config.constants import TEST_SIZE_WEEKS
 
 # Helper function outside the class
-def get_date_3_weeks_back():
+def get_split_date():
     try:
         current_date = datetime.now()
-        past_date = current_date - timedelta(weeks=5)
+        past_date = current_date - timedelta(weeks=TEST_SIZE_WEEKS)
         return past_date
     except Exception as e:
-        logging.error(f"Error calculating 3-weeks-back date: {e}")
-        raise Exception(f"Error calculating 3-weeks-back date: {e}")
+        logging.error(f"Error calculating split date ({TEST_SIZE_WEEKS} weeks): {e}")
+        raise Exception(f"Error calculating split date: {e}")
 
 
 class DataSplitter:
@@ -30,8 +31,8 @@ class DataSplitter:
             self.df["date"] = pd.to_datetime(self.df["date"])
 
             # Get split date using helper function
-            split_date = get_date_3_weeks_back()
-            logging.info(f"Splitting data with split date: {split_date.date()}")
+            split_date = get_split_date()
+            logging.info(f"Splitting data with split date: {split_date.date()} ({TEST_SIZE_WEEKS} weeks back)")
 
             # Perform split
             train_df = self.df[self.df["date"] < split_date].copy()

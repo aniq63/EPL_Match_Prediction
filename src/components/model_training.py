@@ -17,6 +17,7 @@ from config.constants import (
     CV_FOLDS,
     RANDOM_STATE,
     SCORING,
+    TEST_SIZE_WEEKS,
 )
 
 import warnings
@@ -34,7 +35,7 @@ warnings.filterwarnings("ignore")
 # SCORING         = "accuracy"
 
 PARAM_DIST = {
-    "estimator__max_depth":        randint(1, 8),
+    "estimator__max_depth":        randint(2, 10),
     "estimator__min_samples_leaf": randint(1, 20),
     "estimator__min_samples_split":randint(2, 20),
     "estimator__max_features":     ["sqrt", "log2", None],
@@ -116,7 +117,10 @@ class ModelTrainer:
         )
 
         search_base = AdaBoostClassifier(
-            estimator=DecisionTreeClassifier(random_state=RANDOM_STATE),
+            estimator=DecisionTreeClassifier(
+                random_state=RANDOM_STATE, 
+                class_weight='balanced'
+            ),
             # algorithm="SAMME",
             random_state=RANDOM_STATE,
         )
@@ -181,6 +185,7 @@ class ModelTrainer:
             "scoring":              SCORING,
             "input_features":       self.input_features,
             "label_classes":        list(self.le.classes_),
+            "test_size_weeks":      TEST_SIZE_WEEKS,
         }
 
         return model
