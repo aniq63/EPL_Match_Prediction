@@ -7,6 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
+import dagshub
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -232,6 +233,11 @@ class ModelEvaluator:
 
         try:
             logging.info(f"Logging to MLflow | experiment='{self.experiment_name}'")
+            
+            # Initialize DagsHub
+            dagshub.init(repo_owner='aniqramzan5758', repo_name='EPL_Match_Prediction', mlflow=True)
+            mlflow.set_tracking_uri("https://dagshub.com/aniqramzan5758/EPL_Match_Prediction.mlflow")
+            
             mlflow.set_experiment(self.experiment_name)
 
             with mlflow.start_run(run_name=self.run_name):
