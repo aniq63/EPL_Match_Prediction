@@ -1,5 +1,6 @@
 import sys
 import io
+import logging as std_logging
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -239,7 +240,10 @@ class ModelEvaluator:
             mlflow.set_tracking_uri("https://dagshub.com/aniqramzan5758/EPL_Match_Prediction.mlflow")
             
             mlflow.set_experiment(self.experiment_name)
-
+            
+            # Silence internal MLflow warnings that standard warning filters might miss
+            std_logging.getLogger("mlflow").setLevel(std_logging.ERROR)
+            
             with mlflow.start_run(run_name=self.run_name):
 
                 # ── Tags ──────────────────────────────────────────────────
@@ -264,11 +268,16 @@ class ModelEvaluator:
 
                 # ── Model artifact (sklearn flavour) ──────────────────────
                 logging.info("Logging model artifact to MLflow...")
-                mlflow.sklearn.log_model(
-                    sk_model=self.model,
-                    artifact_path="model",
-                    registered_model_name=self.model_name,
-                )
+                import warnings
+                with warnings.catch_warnings():
+                    # Suppress the artifact_path deprecation and pickle security warnings
+                    warnings.filterwarnings("ignore", category=UserWarning, module="mlflow")
+                    warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
+                    mlflow.sklearn.log_model(
+                        sk_model=self.model,
+                        name="model",  # Use name instead of artifact_path to fix MLflow 2.x warning
+                        registered_model_name=self.model_name,
+                    )
 
                 # ── Evaluation figure ─────────────────────────────────────
                 logging.info("Generating and logging evaluation figure...")

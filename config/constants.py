@@ -97,6 +97,9 @@ INPUT_FEATURES = [
     "ppda_diff_avg5","deep_comp_diff_avg5","venue_wins_diff","home_venue_advantage",
     "home_advantage"
 ]
+
+
+EXPERIMENT_NAME ="EPL_Match_Prediction"
 # ============================================================
 # Splitting Configuration
 # ============================================================
