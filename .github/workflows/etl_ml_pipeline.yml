@@ -74,6 +74,8 @@ jobs:
 
       - name: 📈 Calculate data increase
         id: decision
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           # Get current count from database
           CURRENT_COUNT=$(python -c "
