@@ -106,9 +106,19 @@ class ModelEvaluator:
                             repo_name = parts[4].replace(".mlflow", "")
                             
                             logging.info(f"Initializing DagsHub for {repo_owner}/{repo_name}")
-                            # DagsHub SDK uses DAGSHUB_TOKEN for non-interactive auth
+                            # DagsHub SDK uses these for non-interactive auth in CI
                             os.environ["DAGSHUB_TOKEN"] = password
-                            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+                            os.environ["DAGSHUB_USER_TOKEN"] = password
+                            
+                            # Standard MLflow env vars are also needed
+                            os.environ["MLFLOW_TRACKING_USERNAME"] = username
+                            os.environ["MLFLOW_TRACKING_PASSWORD"] = password
+                            
+                            # Only call init if we have a password (to avoid interactive prompt in CI)
+                            if password:
+                                dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+                            else:
+                                logging.warning("No password/token found; skipping DagsHub init.")
                     except Exception as e:
                         logging.warning(f"DagsHub init failed, falling back to standard MLflow: {e}")
 
