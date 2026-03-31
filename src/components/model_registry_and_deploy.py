@@ -79,7 +79,9 @@ class ModelRegistryAndDeploy:
                             repo_name = parts[4].replace(".mlflow", "")
                             
                             logging.info(f"Initializing DagsHub for {repo_owner}/{repo_name}")
-                            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, token=password)
+                            # DagsHub SDK uses DAGSHUB_TOKEN for non-interactive auth
+                            os.environ["DAGSHUB_TOKEN"] = password
+                            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
                     except Exception as e:
                         logging.warning(f"DagsHub init failed, falling back to standard MLflow: {e}")
 

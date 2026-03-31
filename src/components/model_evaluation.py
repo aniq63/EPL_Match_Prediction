@@ -106,7 +106,9 @@ class ModelEvaluator:
                             repo_name = parts[4].replace(".mlflow", "")
                             
                             logging.info(f"Initializing DagsHub for {repo_owner}/{repo_name}")
-                            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, token=password)
+                            # DagsHub SDK uses DAGSHUB_TOKEN for non-interactive auth
+                            os.environ["DAGSHUB_TOKEN"] = password
+                            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
                     except Exception as e:
                         logging.warning(f"DagsHub init failed, falling back to standard MLflow: {e}")
 
@@ -316,7 +318,7 @@ class ModelEvaluator:
                     warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
                     mlflow.sklearn.log_model(
                         sk_model=self.model,
-                        name="model",  # Use name instead of artifact_path to fix MLflow 2.x warning
+                        artifact_path="model",  # Use artifact_path to ensure registry can find the model
                         registered_model_name=self.model_name,
                     )
 
