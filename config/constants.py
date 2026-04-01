@@ -104,4 +104,4 @@ EXPERIMENT_NAME ="EPL_Match_Prediction"
 # Splitting Configuration
 # ============================================================
 
-TEST_SIZE_WEEKS = 5
+TEST_SIZE_WEEKS = 2
