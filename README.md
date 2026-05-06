@@ -56,6 +56,7 @@ The platform goes far beyond a simple model — it implements a complete **MLOps
 ## 🔴 Live Demo
 
 👉 **[https://epl-match-prediction-teal.vercel.app/](https://epl-match-prediction-teal.vercel.app/)**
+
 👉 **[https://youtube.com/shorts/t7EWF9BkEec?si=j14vT0RscpW4KxTc](https://youtube.com/shorts/t7EWF9BkEec?si=j14vT0RscpW4KxTc)**
 
 The frontend is a futuristic, neon-themed dashboard featuring:
