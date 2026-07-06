@@ -19,7 +19,7 @@
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [Live Demo](#-live-demo)
@@ -37,7 +37,7 @@
 
 ---
 
-## 🧠 Overview
+## Overview
 
 **EPL Nexus** is a full-stack machine learning platform that predicts the outcome of English Premier League matches (**Win / Draw / Lose** from the home team's perspective) using historical performance data sourced from [Understat](https://understat.com/) via the [`soccerdata`](https://github.com/probberechts/soccerdata) library.
 
@@ -53,9 +53,11 @@ The platform goes far beyond a simple model — it implements a complete **MLOps
 
 ---
 
-## 🔴 Live Demo
+## Live Demo
 
 👉 **[https://epl-match-prediction-teal.vercel.app/](https://epl-match-prediction-teal.vercel.app/)**
+
+👉 **[https://youtube.com/shorts/t7EWF9BkEec?si=j14vT0RscpW4KxTc](https://youtube.com/shorts/t7EWF9BkEec?si=j14vT0RscpW4KxTc)**
 
 The frontend is a futuristic, neon-themed dashboard featuring:
 
@@ -68,7 +70,7 @@ The frontend is a futuristic, neon-themed dashboard featuring:
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -115,34 +117,34 @@ The frontend is a futuristic, neon-themed dashboard featuring:
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🤖 Machine Learning
+### Machine Learning
 - **AdaBoostClassifier** with DecisionTree base estimator and balanced class weights
 - **RandomizedSearchCV** (50 iterations) with **TimeSeriesSplit** cross-validation — prevents temporal data leakage
 - **27 engineered features** including rolling xG, PPDA, deep completions, venue form, and differential metrics
 - Optimized for **F1-Macro** to handle class imbalance across Win/Draw/Lose outcomes
 
-### 🔁 MLOps & Automation
+### MLOps & Automation
 - **MLflow on DagsHub** for experiment tracking, metric logging, confusion matrix artifacts, and model registry
 - Automated **Staging → Production promotion** — new models are only promoted if they beat the current production model
 - Production models serialized to **AWS S3** for fast inference
 - **4 GitHub Actions workflows** running on cron schedules for fully autonomous operation
 
-### 📊 Data & Analytics
+### Data & Analytics
 - **ETL pipeline** extracting multi-season data from Understat via `soccerdata`
 - **Supabase (PostgreSQL)** as the central data warehouse
 - **11 analytics tables** refreshed automatically: top players (goals, assists, shots, key passes, cards) and top teams (goals, shots, cards, created chances)
 - Live EPL data from **Football-Data.org** and **NewsAPI**
 
-### 🌐 API & Frontend
+### API & Frontend
 - **FastAPI REST API** with structured endpoints for dashboard, analytics, and ML predictions
 - **Neon-themed frontend** with glassmorphism, micro-animations, and responsive design
 - Deployed on **Vercel** with live data updates
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Layer | Technologies |
 |---|---|
@@ -160,7 +162,7 @@ The frontend is a futuristic, neon-themed dashboard featuring:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 EPL_Nexus/
@@ -223,7 +225,7 @@ EPL_Nexus/
 
 ---
 
-## 🧪 Feature Engineering
+## Feature Engineering
 
 The model uses **27 carefully engineered features** derived from raw match data:
 
@@ -258,7 +260,7 @@ The model uses **27 carefully engineered features** derived from raw match data:
 
 ---
 
-## 🤖 ML Pipeline
+## ML Pipeline
 
 ```mermaid
 graph LR
@@ -290,7 +292,7 @@ graph LR
 
 ---
 
-## ⚙ CI/CD Automation
+## CI/CD Automation
 
 The platform runs **4 fully automated GitHub Actions workflows**:
 
@@ -306,7 +308,7 @@ The ETL pipeline tracks the data count between runs. The ML training job only tr
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -321,7 +323,7 @@ Full interactive docs available at `/docs` (Swagger UI).
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.10+
@@ -364,7 +366,7 @@ The API will be available at `http://localhost:8000` and docs at `http://localho
 
 ---
 
-## 🐳 Docker
+## Docker
 
 [![Docker Hub](https://img.shields.io/badge/docker_hub-epl--match--prediction-blue?logo=docker&logoColor=white)](https://hub.docker.com/r/aniqramzan/epl-match-prediction)
 
@@ -382,7 +384,7 @@ The API will be accessible at `http://localhost:8000`.
 
 ---
 
-## 🔐 Environment Variables
+## Environment Variables
 
 Create a `.env` file in the project root with the following:
 
@@ -411,7 +413,7 @@ DEBUG=False
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
@@ -422,7 +424,7 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 </p>
 
 <p align="center">
-  <a href="https://epl-match-prediction-teal.vercel.app/">🔴 Live Demo</a> •
+  <a href="https://epl-match-prediction-teal.vercel.app/">Live Demo</a> •
   <a href="https://dagshub.com/aniqramzan5758/EPL_Match_Prediction">📊 MLflow Experiments</a> •
   <a href="https://github.com/aniqramzan5758/EPL_Match_Prediction/actions">⚙️ CI/CD Pipelines</a>
 </p>
