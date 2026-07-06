@@ -218,3 +218,4 @@ aniq ramzan
 .env.local
 .env.*.local
 *.env
+interview.txt
