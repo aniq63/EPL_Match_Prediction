@@ -1,9 +1,6 @@
 import os
 import sys
 import json
-import pickle
-import tempfile
-import boto3
 from dotenv import load_dotenv
 
 import mlflow
@@ -20,11 +17,6 @@ load_dotenv()
 MLFLOW_TRACKING_URI      = os.getenv("MLFLOW_TRACKING_URI")
 MLFLOW_TRACKING_USERNAME = os.getenv("MLFLOW_TRACKING_USERNAME")
 MLFLOW_TRACKING_PASSWORD = os.getenv("MLFLOW_TRACKING_PASSWORD")
-
-AWS_ACCESS_KEY_ID        = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY    = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION               = os.getenv("AWS_REGION", "us-east-1")
-S3_BUCKET_NAME           = os.getenv("S3_BUCKET_NAME")
 
 
 class ModelRegistryAndDeploy:
@@ -345,62 +337,6 @@ class ModelRegistryAndDeploy:
             raise MyException(e, sys)
 
     # ──────────────────────────────────────────────────────────────────────────
-    def upload_model_to_s3(self, stage: str = "Production"):
-        try:
-            if not S3_BUCKET_NAME or not AWS_ACCESS_KEY_ID:
-                logging.warning("S3 credentials missing — skipping upload.")
-                return None
-
-            s3 = boto3.client(
-                "s3",
-                aws_access_key_id=AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name=AWS_REGION,
-            )
-
-            versions = self.client.get_latest_versions(self.model_name, stages=[stage])
-            if not versions:
-                logging.warning(f"No model in '{stage}' stage — skipping S3 upload.")
-                return None
-
-            version   = versions[0]
-            model_uri = f"models:/{self.model_name}/{stage}"
-            logging.info(f"Loading model from MLflow ({model_uri})...")
-
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                model     = mlflow.sklearn.load_model(model_uri)
-                local_pkl = os.path.join(tmp_dir, "model.pkl")
-                with open(local_pkl, "wb") as f:
-                    pickle.dump(model, f)
-
-                s3_key = f"models/{self.model_name}/{stage}/model.pkl"
-                logging.info(f"Uploading to s3://{S3_BUCKET_NAME}/{s3_key} ...")
-                s3.upload_file(local_pkl, S3_BUCKET_NAME, s3_key)
-
-                metadata = {
-                    "model_name": self.model_name,
-                    "stage":      stage,
-                    "version":    version.version,
-                    "run_id":     version.run_id,
-                    "s3_bucket":  S3_BUCKET_NAME,
-                    "s3_key":     s3_key,
-                }
-                meta_key = f"models/{self.model_name}/{stage}/metadata.json"
-                s3.put_object(
-                    Bucket=S3_BUCKET_NAME,
-                    Key=meta_key,
-                    Body=json.dumps(metadata, indent=2),
-                )
-                logging.info(f"Metadata → s3://{S3_BUCKET_NAME}/{meta_key}")
-
-            logging.info("S3 upload complete.")
-            return s3_key
-
-        except Exception as e:
-            logging.error(f"S3 upload failed: {e}")
-            raise MyException(e, sys)
-
-    # ──────────────────────────────────────────────────────────────────────────
     def run_deployment_pipeline(self):
         try:
             logging.info("=" * 60)
@@ -415,9 +351,12 @@ class ModelRegistryAndDeploy:
 
             if self.compare_staging_vs_production():
                 self.promote_to_production()
-                self.upload_model_to_s3(stage="Production")
+                logging.info(
+                    "New model promoted to PRODUCTION in the MLflow registry. "
+                    "It will be loaded directly from there at prediction time."
+                )
             else:
-                logging.info("Production model retained. S3 upload skipped.")
+                logging.info("Production model retained. No promotion needed.")
 
             logging.info("=" * 60)
             logging.info("MODEL REGISTRY & DEPLOYMENT PIPELINE COMPLETE")

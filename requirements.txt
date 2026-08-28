@@ -12,8 +12,6 @@ from_root
 dill
 certifi
 PyYAML
-boto3
-mypy-boto3-s3
 botocore
 fastapi
 python-multipart

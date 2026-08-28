@@ -1,10 +1,10 @@
 import os
 import sys
-import pickle
-import tempfile
 from typing import Optional
 
-import boto3
+import mlflow
+import mlflow.sklearn
+import dagshub
 import numpy as np
 import pandas as pd
 import soccerdata as sd
@@ -21,10 +21,9 @@ from sqlalchemy import create_engine
 
 load_dotenv()
 
-AWS_ACCESS_KEY_ID     = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION            = os.getenv("AWS_REGION", "us-east-1")
-S3_BUCKET_NAME        = os.getenv("S3_BUCKET_NAME")
+MLFLOW_TRACKING_URI      = os.getenv("MLFLOW_TRACKING_URI")
+MLFLOW_TRACKING_USERNAME = os.getenv("MLFLOW_TRACKING_USERNAME")
+MLFLOW_TRACKING_PASSWORD = os.getenv("MLFLOW_TRACKING_PASSWORD")
 
 # ── Exact 27 features the model was trained on ────────────────────────────────
 FEATURE_COLUMNS = [
@@ -91,6 +90,17 @@ ESPN_TO_UNDERSTAT = {
     "Nott'm Forest":           "Nottingham Forest",
     "Wolves":                  "Wolverhampton Wanderers",
     "Spurs":                   "Tottenham",
+    "Coventry City":           "Coventry City",
+    "Hull City":               "Hull City",
+    "West Bromwich Albion":    "West Bromwich Albion",
+    "Middlesbrough":           "Middlesbrough",
+    "Norwich City":            "Norwich",
+    "Watford":                 "Watford",
+    "Cardiff City":            "Cardiff",
+    "Huddersfield Town":       "Huddersfield",
+    "Swansea City":            "Swansea",
+    "Stoke City":              "Stoke",
+    "West Brom":               "West Bromwich Albion",
 }
 
 
@@ -167,18 +177,54 @@ class PredictionPipeline:
     def __init__(self, stage: str = "Production"):
         self.stage      = stage
         self.model_name = MODEL_NAME
-        self.s3_key     = f"models/{self.model_name}/{self.stage}/model.pkl"
+        self.model_uri  = f"models:/{self.model_name}/{self.stage}"
 
         try:
-            self.s3 = boto3.client(
-                "s3",
-                aws_access_key_id=AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-                region_name=AWS_REGION,
+            self._connect_to_mlflow()
+            logging.info(
+                f"PredictionPipeline initialised — will load '{self.model_uri}' "
+                f"from the MLflow registry on DagsHub."
             )
-            logging.info("PredictionPipeline initialised — S3 client ready.")
         except Exception as e:
-            logging.error(f"S3 client init failed: {e}")
+            logging.error(f"MLflow connection init failed: {e}")
+            raise MyException(e, sys)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # MLflow / DagsHub connection
+    # ══════════════════════════════════════════════════════════════════════════
+    def _connect_to_mlflow(self):
+        """Configure MLflow to talk to the DagsHub-hosted tracking/registry server."""
+        try:
+            uri = MLFLOW_TRACKING_URI or \
+                  "https://dagshub.com/aniqramzan5758/EPL_Match_Prediction.mlflow"
+
+            username = MLFLOW_TRACKING_USERNAME
+            password = MLFLOW_TRACKING_PASSWORD or os.getenv("DAGSHUB_TOKEN")
+
+            if username and password:
+                os.environ["MLFLOW_TRACKING_USERNAME"] = username
+                os.environ["MLFLOW_TRACKING_PASSWORD"] = password
+
+                if "dagshub.com" in uri.lower():
+                    try:
+                        parts = uri.split("/")
+                        if len(parts) >= 5:
+                            repo_owner = parts[3]
+                            repo_name  = parts[4].replace(".mlflow", "")
+
+                            logging.info(f"Initializing DagsHub for {repo_owner}/{repo_name}")
+                            os.environ["DAGSHUB_TOKEN"]      = password
+                            os.environ["DAGSHUB_USER_TOKEN"] = password
+
+                            dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+                    except Exception as e:
+                        logging.warning(f"DagsHub init failed, falling back to standard MLflow: {e}")
+
+            mlflow.set_tracking_uri(uri)
+            logging.info(f"Connected to MLflow at: {uri}")
+
+        except Exception as e:
+            logging.error(f"Error configuring MLflow: {e}")
             raise MyException(e, sys)
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -186,8 +232,21 @@ class PredictionPipeline:
     # ══════════════════════════════════════════════════════════════════════════
     def _fetch_espn_fixtures(self, league: str = "ENG-Premier League") -> pd.DataFrame:
         """
-        Fetch all upcoming matches within a 4-day window starting from the
-        first found future match (next "gameweek") from ESPN.
+        Fetch the next full Premier League gameweek from ESPN.
+
+        A standard EPL gameweek = 10 matches, with each of the 20 clubs
+        playing exactly once. Starting from the earliest upcoming fixture,
+        this walks forward through the sorted fixture list and keeps adding
+        matches until either:
+          - 10 matches have been collected (a complete gameweek), or
+          - a club that has already appeared would play a second time
+            (a sign the *next* gameweek's fixtures have started, e.g. because
+            of midweek re-arranged games) — in which case we stop early and
+            return only the matches collected so far.
+
+        This is safer than a fixed date window because gameweeks aren't
+        always confined to a neat few-day span (rearranged/rescheduled
+        fixtures can spill outside a fixed window).
 
         Returns
         -------
@@ -214,17 +273,43 @@ class PredictionPipeline:
                 logging.warning("No future fixtures found in ESPN data.")
                 return pd.DataFrame(columns=["home_team", "away_team", "date"])
 
-            # 🧠 Define gameweek as matches within 4 days of the FIRST upcoming match
-            start_time = upcoming.loc[0, "date"]
-            window     = pd.Timedelta(days=4)
+            # 🧠 Walk forward and build one complete gameweek: 10 matches,
+            # each of the 20 clubs appearing exactly once.
+            MAX_GAMEWEEK_MATCHES = 10
+            seen_teams   = set()
+            selected     = []
+
+            for _, row in upcoming.iterrows():
+                home_team = row["home_team"]
+                away_team = row["away_team"]
+
+                if home_team in seen_teams or away_team in seen_teams:
+                    # This match belongs to a later gameweek — stop here.
+                    break
+
+                selected.append(row)
+                seen_teams.add(home_team)
+                seen_teams.add(away_team)
+
+                if len(selected) == MAX_GAMEWEEK_MATCHES:
+                    break
 
             fixtures = (
-                upcoming[upcoming["date"] <= start_time + window]
-                [["home_team", "away_team", "date"]]
+                pd.DataFrame(selected)[["home_team", "away_team", "date"]]
                 .reset_index(drop=True)
             )
 
-            logging.info(f"Fetched {len(fixtures)} fixture(s) for the next gameweek window.")
+            logging.info(
+                f"Selected gameweek: {len(fixtures)} match(es) covering "
+                f"{len(seen_teams)} club(s)."
+            )
+            if len(fixtures) < MAX_GAMEWEEK_MATCHES:
+                logging.warning(
+                    f"Gameweek has only {len(fixtures)}/{MAX_GAMEWEEK_MATCHES} matches — "
+                    f"this may be a partial gameweek (postponements, midweek fixtures "
+                    f"spilling into the next round, or season start/end)."
+                )
+
             return fixtures
 
         except Exception as e:
@@ -250,12 +335,23 @@ class PredictionPipeline:
     # ══════════════════════════════════════════════════════════════════════════
     def fetch_and_clean_data(self) -> pd.DataFrame:
         """
-        Fetch raw data for the current season from the warehouse and run
-        DataTransformation. Result is cached so repeated calls are free.
+        Fetch ALL historical data from the warehouse (not just the current
+        season) and run DataTransformation. Result is cached so repeated
+        calls are free.
+
+        Why all history and not just the current season: rolling "last 5"
+        features need 5 prior matches per team. Early in a new season
+        (gameweeks 1-4), a team simply hasn't played 5 home/away matches
+        yet *this season* — but its form absolutely still exists from the
+        end of last season. Pulling the full history lets the last-5 slice
+        naturally span the season boundary instead of failing with
+        "No match history found" for the first few gameweeks of every season.
 
         Returns
         -------
-        pd.DataFrame — cleaned data, date column as datetime
+        pd.DataFrame — cleaned data, date column as datetime, all seasons,
+                       sorted chronologically, restricted to matches that
+                       have already been played (date <= now).
         """
         # Return cache if available
         if PredictionPipeline._cached_clean_df is not None:
@@ -263,13 +359,18 @@ class PredictionPipeline:
             return PredictionPipeline._cached_clean_df
 
         try:
-            season_str = get_current_season()
-            season_int = int(season_str.split("/")[0])   # e.g. 2025
-            logging.info(f"Fetching warehouse data for season: {season_str}")
+            logging.info("Fetching full match history from the warehouse...")
 
             ingestion = DataIngestion()
-            raw_df    = ingestion.fetch_data_by_season(season=season_int)
-            logging.info(f"Fetched {len(raw_df)} rows.")
+            raw_df    = ingestion.fetch_all_data()
+            logging.info(f"Fetched {len(raw_df)} rows across all seasons.")
+
+            if raw_df.empty:
+                raise ValueError("Warehouse returned no data — cannot build features.")
+
+            # Keep only matches that have actually been played, sorted chronologically.
+            raw_df["date"] = pd.to_datetime(raw_df["date"])
+            raw_df = raw_df[raw_df["date"] <= pd.Timestamp.now()].sort_values("date")
 
             transformer = DataTransformation(raw_df)
             clean_df    = transformer.transform_pl_data()
@@ -462,24 +563,24 @@ class PredictionPipeline:
             raise MyException(e, sys)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # STEP 5 — Load model from S3  (cached after first call)
+    # STEP 5 — Load model from MLflow Model Registry (DagsHub) — cached after first call
     # ══════════════════════════════════════════════════════════════════════════
     def load_model(self):
-        """Download model.pkl from S3 once, then serve from in-memory cache."""
+        """
+        Load the model straight from the MLflow Model Registry (hosted on
+        DagsHub) at `models:/{model_name}/{stage}`, then serve from an
+        in-memory cache for subsequent calls in the same process.
+        """
         if PredictionPipeline._cached_model is not None:
             logging.info("Using cached model.")
             return PredictionPipeline._cached_model
 
         try:
-            logging.info(f"Downloading model from s3://{S3_BUCKET_NAME}/{self.s3_key}")
-            with tempfile.TemporaryDirectory() as tmp:
-                local_pkl = os.path.join(tmp, "model.pkl")
-                self.s3.download_file(S3_BUCKET_NAME, self.s3_key, local_pkl)
-                with open(local_pkl, "rb") as f:
-                    model = pickle.load(f)
+            logging.info(f"Loading model from MLflow registry: {self.model_uri}")
+            model = mlflow.sklearn.load_model(self.model_uri)
 
             PredictionPipeline._cached_model = model
-            logging.info("Model loaded and cached.")
+            logging.info("Model loaded from MLflow and cached.")
             return model
 
         except Exception as e:
