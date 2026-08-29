@@ -3,7 +3,6 @@
   <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
   <img src="https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white" />
   <img src="https://img.shields.io/badge/MLflow-0194E2?style=for-the-badge&logo=mlflow&logoColor=white" />
-  <img src="https://img.shields.io/badge/AWS_S3-232F3E?style=for-the-badge&logo=amazonaws&logoColor=white" />
   <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white" />
   <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" />
 
@@ -14,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://epl-match-prediction-teal.vercel.app/"><img src="https://img.shields.io/badge/🔴_LIVE_DEMO-Visit_App-F2055C?style=for-the-badge" /></a>
+  <a href="https://premier-league-nexsus-hm9z1pqlu-aniqs-projects-dc1fd261.vercel.app/"><img src="https://img.shields.io/badge/🔴_LIVE_DEMO-Visit_App-F2055C?style=for-the-badge" /></a>
 </p>
 
 ---
@@ -47,7 +46,7 @@ The platform goes far beyond a simple model — it implements a complete **MLOps
 2. **27 engineered features** capture rolling form, venue advantage, xG differentials, and pressing intensity
 3. **AdaBoostClassifier** is tuned via RandomizedSearchCV with TimeSeriesSplit to prevent data leakage
 4. **MLflow on DagsHub** tracks experiments, manages model versions, and promotes through Staging → Production
-5. **AWS S3** hosts the production model for low-latency inference
+5. **MLflow Model Registry** serves production models for low-latency inference
 6. **FastAPI** serves predictions, live standings, analytics, and news through a REST API
 7. **GitHub Actions** orchestrates everything autonomously on a cron schedule
 
@@ -55,9 +54,7 @@ The platform goes far beyond a simple model — it implements a complete **MLOps
 
 ## Live Demo
 
-👉 **[https://epl-match-prediction-teal.vercel.app/](https://epl-match-prediction-teal.vercel.app/)**
-
-👉 **[https://youtube.com/shorts/t7EWF9BkEec?si=j14vT0RscpW4KxTc](https://youtube.com/shorts/t7EWF9BkEec?si=j14vT0RscpW4KxTc)**
+👉 **[https://premier-league-nexsus-hm9z1pqlu-aniqs-projects-dc1fd261.vercel.app/](https://premier-league-nexsus-hm9z1pqlu-aniqs-projects-dc1fd261.vercel.app/)**
 
 The frontend is a futuristic, neon-themed dashboard featuring:
 
@@ -82,12 +79,12 @@ The frontend is a futuristic, neon-themed dashboard featuring:
 └─────────┼──────────────────┼────────────────┼──────────────┼─────────┘
           │                  │                │              │
           ▼                  ▼                ▼              ▼
-┌─────────────────┐  ┌──────────────┐  ┌───────────┐  ┌──────────┐
-│   Understat      │  │  MLflow /    │  │  AWS S3   │  │ Understat│
-│   (soccerdata)   │  │  DagsHub     │  │  (Model)  │  │ (Stats)  │
-└────────┬────────┘  └──────┬───────┘  └─────┬─────┘  └────┬─────┘
-         │                  │                │              │
-         ▼                  ▼                ▼              ▼
+┌─────────────────┐  ┌────────────────────────┐              ┌──────────┐
+│   Understat     │  │   MLflow / DagsHub     │              │ Understat│
+│   (soccerdata)  │  │   (Model Registry)     │              │ (Stats)  │
+└────────┬────────┘  └───────────┬────────────┘              └────┬─────┘
+         │                       │                                │
+         ▼                       ▼                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     SUPABASE (PostgreSQL)                            │
 │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────────┐    │
@@ -128,7 +125,7 @@ The frontend is a futuristic, neon-themed dashboard featuring:
 ### MLOps & Automation
 - **MLflow on DagsHub** for experiment tracking, metric logging, confusion matrix artifacts, and model registry
 - Automated **Staging → Production promotion** — new models are only promoted if they beat the current production model
-- Production models serialized to **AWS S3** for fast inference
+- Production models loaded directly from **MLflow Model Registry on DagsHub** for inference
 - **4 GitHub Actions workflows** running on cron schedules for fully autonomous operation
 
 ### Data & Analytics
@@ -155,9 +152,9 @@ The frontend is a futuristic, neon-themed dashboard featuring:
 | **Data Source** | Understat (via `soccerdata`), ESPN, Football-Data.org, NewsAPI |
 | **Data Warehouse** | Supabase (PostgreSQL), SQLAlchemy, asyncpg |
 | **Backend API** | FastAPI, Uvicorn, Pydantic |
-| **Cloud Storage** | AWS S3 (Boto3) — production model hosting |
+| **Model Storage** | MLflow Model Registry (DagsHub) |
 | **CI/CD** | GitHub Actions (4 workflows, cron-scheduled) |
-| **Frontend** | Vanilla HTML/CSS/JS, Chart.js |
+| **Frontend** | Vanilla HTML/CSS/JS, Chart.js / React, Tailwind CSS |
 | **Deployment** | Vercel (Frontend), Render / Railway (Backend) |
 
 ---
@@ -193,7 +190,7 @@ EPL_Nexus/
 │   │   ├── data_transformation.py  # ML-specific data prep
 │   │   ├── model_training.py       # AdaBoost + RandomizedSearchCV + TimeSeriesSplit
 │   │   ├── model_evaluation.py     # Metrics, confusion matrix, MLflow logging
-│   │   └── model_registry_and_deploy.py  # Staging → Production + S3 upload
+│   │   └── model_registry_and_deploy.py  # Staging → Production promotion
 │   │
 │   ├── pipelines/                  # Pipeline orchestrators
 │   │   ├── etl_pipeline.py         # End-to-end ETL orchestration
@@ -274,7 +271,7 @@ graph LR
     H --> I{Staging vs<br/>Production}
     I -->|Better| J[Promote to<br/>Production]
     I -->|Worse| K[Keep Current<br/>Production]
-    J --> L[Upload to<br/>AWS S3]
+    J --> L[Model Served via<br/>MLflow Registry]
 ```
 
 ### Model Details
@@ -328,8 +325,7 @@ Full interactive docs available at `/docs` (Swagger UI).
 ### Prerequisites
 - Python 3.10+
 - Supabase account (PostgreSQL database)
-- AWS account (S3 bucket for model storage)
-- DagsHub account (MLflow experiment tracking)
+- DagsHub account (MLflow experiment tracking & model registry)
 
 ### Installation
 
@@ -392,13 +388,7 @@ Create a `.env` file in the project root with the following:
 # ── Database (Supabase) ──
 DATABASE_URL=postgresql+asyncpg://user:password@host:port/dbname
 
-# ── AWS S3 (Model Storage) ──
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_REGION=us-east-1
-S3_BUCKET_NAME=your_bucket_name
-
-# ── MLflow / DagsHub (Experiment Tracking) ──
+# ── MLflow / DagsHub (Experiment Tracking & Model Registry) ──
 MLFLOW_TRACKING_URI=https://dagshub.com/username/repo.mlflow
 MLFLOW_TRACKING_USERNAME=your_dagshub_username
 MLFLOW_TRACKING_PASSWORD=your_dagshub_token
@@ -424,7 +414,8 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 </p>
 
 <p align="center">
-  <a href="https://epl-match-prediction-teal.vercel.app/">Live Demo</a> •
+  <a href="https://premier-league-nexsus-hm9z1pqlu-aniqs-projects-dc1fd261.vercel.app/">Live Demo</a> •
   <a href="https://dagshub.com/aniqramzan5758/EPL_Match_Prediction">📊 MLflow Experiments</a> •
   <a href="https://github.com/aniqramzan5758/EPL_Match_Prediction/actions">⚙️ CI/CD Pipelines</a>
 </p>
+
