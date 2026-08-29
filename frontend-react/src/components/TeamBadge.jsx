@@ -34,6 +34,7 @@ export default function TeamBadge({ name, crestUrl, size = "md" }) {
       title={name}
       onError={() => setFailed(true)}
       loading="lazy"
+      referrerPolicy="no-referrer"
     />
   );
 }

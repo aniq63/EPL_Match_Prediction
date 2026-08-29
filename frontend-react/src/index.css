@@ -167,6 +167,72 @@ img { max-width: 100%; display: block; }
   background: var(--green);
 }
 
+/* Mobile Menu Hamburger Toggle */
+.mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hamburger-icon {
+  position: relative;
+  width: 20px;
+  height: 2px;
+  background-color: #fff;
+  transition: all 0.2s ease-in-out;
+}
+
+.hamburger-icon::before,
+.hamburger-icon::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 2px;
+  background-color: #fff;
+  transition: all 0.2s ease-in-out;
+}
+
+.hamburger-icon::before { transform: translateY(-6px); }
+.hamburger-icon::after { transform: translateY(6px); }
+
+.hamburger-icon.open { background-color: transparent; }
+.hamburger-icon.open::before { transform: rotate(45deg); }
+.hamburger-icon.open::after { transform: rotate(-45deg); }
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: var(--purple);
+    flex-direction: column;
+    padding: 16px 24px;
+    gap: 8px;
+    border-bottom: 2px solid var(--purple-soft);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  .nav-links.mobile-open {
+    display: flex;
+  }
+
+  .nav-link {
+    width: 100%;
+    text-align: center;
+    padding: 12px 20px;
+  }
+}
+
 /* ══════════════════════════════════════════════════
    PAGE HERO BAND (purple, appears on every page)
    ══════════════════════════════════════════════════ */
@@ -601,6 +667,34 @@ table.data-table {
   align-items: center;
   gap: 16px;
   padding: 14px 18px;
+}
+
+@media (max-width: 540px) {
+  .match-card {
+    padding: 12px 10px;
+    gap: 6px;
+  }
+  .match-team-name {
+    font-size: 0.8rem;
+  }
+  .match-mid {
+    min-width: 50px;
+  }
+  .match-score {
+    font-size: 0.95rem;
+  }
+
+  .champion-row {
+    grid-template-columns: 65px 1fr auto;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .champion-club {
+    font-size: 0.9rem;
+  }
+  .champion-season, .champion-points {
+    font-size: 0.76rem;
+  }
 }
 
 .champion-season {

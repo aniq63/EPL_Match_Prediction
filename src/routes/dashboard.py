@@ -73,11 +73,26 @@ def get_news():
     except Exception:
         return []
 
+import time
+
+# Simple In-Memory Cache for Dashboard Data
+dashboard_cache = {
+    "data": None,
+    "timestamp": 0
+}
+CACHE_TTL = 900  # 15 minutes in seconds
+
 @router.get("/dashboard")
 async def get_full_dashboard():
+    current_time = time.time()
+    
+    # Return cached data if it's still fresh
+    if dashboard_cache["data"] and (current_time - dashboard_cache["timestamp"] < CACHE_TTL):
+        return dashboard_cache["data"]
+        
     match_info = get_fixtures_and_results()
     
-    return {
+    data = {
         "standings": get_standings(),
         "fixtures": match_info.get("fixtures"),
         "results": match_info.get("results"),
@@ -87,3 +102,9 @@ async def get_full_dashboard():
             "prev_mw": match_info.get("prev_matchweek")
         }
     }
+    
+    # Save to cache
+    dashboard_cache["data"] = data
+    dashboard_cache["timestamp"] = current_time
+    
+    return data
