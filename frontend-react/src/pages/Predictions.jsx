@@ -9,6 +9,7 @@ import {
 } from "chart.js";
 import PageHero from "../components/PageHero.jsx";
 import { Loader, ErrorBlock, EmptyBlock } from "../components/States.jsx";
+import TeamBadge from "../components/TeamBadge.jsx";
 import { api } from "../api.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
@@ -38,6 +39,7 @@ function PredictionCard({ p }) {
 
       <div className="match-card" style={{ padding: 0 }}>
         <div className="match-side home">
+          <TeamBadge name={p.home_team} size="md" />
           <span className="match-team-name">{p.home_team}</span>
         </div>
         <div className="match-mid">
@@ -45,6 +47,7 @@ function PredictionCard({ p }) {
           <span className="match-date">{formatDate(p.match_date)}</span>
         </div>
         <div className="match-side away">
+          <TeamBadge name={p.away_team} size="md" />
           <span className="match-team-name">{p.away_team}</span>
         </div>
       </div>

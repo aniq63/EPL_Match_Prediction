@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../api.js";
+
 export function Loader({ label = "Loading data…" }) {
   return (
     <div className="state-block">
@@ -9,9 +11,10 @@ export function Loader({ label = "Loading data…" }) {
 
 export function ErrorBlock({ message, onRetry }) {
   return (
-    <div className="state-block">
+    <div className="state-block state-block-error">
       <div className="state-title">Couldn't load this</div>
-      <span>{message || "The server didn't respond. Check the backend is running and reachable."}</span>
+      <span>{message || "The server didn't respond."}</span>
+      <code className="state-diagnostic">API target: {API_BASE_URL}</code>
       {onRetry && (
         <button className="retry-btn" onClick={onRetry}>
           Try again

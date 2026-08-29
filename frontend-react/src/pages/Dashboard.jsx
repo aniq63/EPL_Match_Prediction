@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import PageHero from "../components/PageHero.jsx";
 import { Loader, ErrorBlock, EmptyBlock } from "../components/States.jsx";
 import { PipRow } from "../components/Pips.jsx";
+import TeamBadge from "../components/TeamBadge.jsx";
 import { api } from "../api.js";
 
 function formatDate(iso) {
@@ -40,7 +41,7 @@ function StandingsTable({ rows }) {
               <td><span className="rank-num">{row.position}</span></td>
               <td>
                 <div className="team-cell">
-                  {row.team?.crest && <img className="team-crest" src={row.team.crest} alt="" />}
+                  <TeamBadge name={row.team?.name} crestUrl={row.team?.crest} size="sm" />
                   {row.team?.name}
                 </div>
               </td>
@@ -67,7 +68,7 @@ function MatchList({ matches, showScore }) {
       {matches.map((m) => (
         <div className="card card-white match-card" key={m.id}>
           <div className="match-side home">
-            {m.homeTeam?.crest && <img className="team-crest" src={m.homeTeam.crest} alt="" />}
+            <TeamBadge name={m.homeTeam?.name} crestUrl={m.homeTeam?.crest} size="md" />
             <span className="match-team-name">{m.homeTeam?.name}</span>
           </div>
           <div className="match-mid">
@@ -81,7 +82,7 @@ function MatchList({ matches, showScore }) {
             <span className="match-date">{formatDate(m.utcDate)}</span>
           </div>
           <div className="match-side away">
-            {m.awayTeam?.crest && <img className="team-crest" src={m.awayTeam.crest} alt="" />}
+            <TeamBadge name={m.awayTeam?.name} crestUrl={m.awayTeam?.crest} size="md" />
             <span className="match-team-name">{m.awayTeam?.name}</span>
           </div>
         </div>

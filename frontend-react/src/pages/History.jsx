@@ -1,4 +1,5 @@
 import PageHero from "../components/PageHero.jsx";
+import TeamBadge from "../components/TeamBadge.jsx";
 import { CHAMPIONS, getTitleLeaders } from "../data/champions.js";
 
 export default function History() {
@@ -21,7 +22,10 @@ export default function History() {
           <div className="grid grid-3">
             {leaders.map(([team, count]) => (
               <div className="card stat-card" key={team}>
-                <span className="stat-value">{count}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <TeamBadge name={team} size="md" />
+                  <span className="stat-value">{count}</span>
+                </div>
                 <span className="stat-label">{team}</span>
               </div>
             ))}
@@ -38,7 +42,10 @@ export default function History() {
             {recent.map((c) => (
               <div className="card card-white" key={c.season}>
                 <div className="stat-label" style={{ marginBottom: 6 }}>{c.season}</div>
-                <div className="champion-club" style={{ marginBottom: 4 }}>{c.team}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <TeamBadge name={c.team} size="md" />
+                  <div className="champion-club">{c.team}</div>
+                </div>
                 <div className="champion-manager">{c.manager} · {c.pts} pts</div>
               </div>
             ))}
@@ -59,9 +66,12 @@ export default function History() {
                 style={{ background: i % 2 === 0 ? "#fff" : "var(--surface)" }}
               >
                 <span className="champion-season">{c.season}</span>
-                <div>
-                  <div className="champion-club">{c.team}</div>
-                  <div className="champion-manager">{c.manager}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <TeamBadge name={c.team} size="sm" />
+                  <div>
+                    <div className="champion-club">{c.team}</div>
+                    <div className="champion-manager">{c.manager}</div>
+                  </div>
                 </div>
                 <span className="champion-points">{c.pts} pts</span>
               </div>

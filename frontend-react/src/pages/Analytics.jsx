@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PageHero from "../components/PageHero.jsx";
 import { Loader, ErrorBlock, EmptyBlock } from "../components/States.jsx";
+import TeamBadge from "../components/TeamBadge.jsx";
 import { api } from "../api.js";
 
 // Each tab maps to a backend table key + a preferred metric field name
@@ -48,6 +49,7 @@ function Leaderboard({ rows, metricHints }) {
   if (!rows || rows.length === 0) return <EmptyBlock message="No records for this category." />;
 
   const { nameKey, teamKey, metricKey } = inferColumns(rows[0], metricHints);
+  const badgeSource = teamKey || nameKey; // team column if present, else the name itself is a club
 
   return (
     <div className="card card-white">
@@ -55,6 +57,7 @@ function Leaderboard({ rows, metricHints }) {
         {rows.slice(0, 10).map((row, i) => (
           <div className="leaderboard-row" key={i}>
             <span className="leaderboard-rank">{i + 1}</span>
+            <TeamBadge name={badgeSource ? row[badgeSource] : ""} size="sm" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="leaderboard-name">{nameKey ? row[nameKey] : "—"}</div>
               {teamKey && <div className="leaderboard-team">{row[teamKey]}</div>}
