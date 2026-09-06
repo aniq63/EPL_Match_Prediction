@@ -20,7 +20,7 @@ export default function History() {
       <PageHero
         eyebrow="Since 1992"
         title="Premier League Champions"
-        sub="33 seasons — every title, every dynasty, every miracle run to the line."
+        sub="34 seasons - every title, every dynasty, every miracle run to the line."
       />
       <div className="page-body container">
         <section style={{ marginBottom: 44 }}>
@@ -55,7 +55,7 @@ export default function History() {
                   <TeamBadge name={c.team} size="md" />
                   <div className="champion-club">{c.team}</div>
                 </div>
-                <div className="champion-manager">{c.manager} · {c.pts} pts</div>
+                <div className="champion-manager">{c.manager} · {c.pts ? `${c.pts} pts` : "2025/26 champions"}</div>
               </div>
             ))}
           </div>
@@ -64,7 +64,7 @@ export default function History() {
         <section>
           <div className="section-head">
             <span className="section-title">Full Timeline</span>
-            <span className="section-count">1992/93 - 2024/25</span>
+            <span className="section-count">1992/93 - 2025/26</span>
             <div className="section-line" />
           </div>
           <div className="table-wrap">
@@ -79,7 +79,7 @@ export default function History() {
                   <TeamBadge name={c.team} size="sm" />
                   <div>
                     <div className="champion-club">{c.team}</div>
-                    <div className="champion-manager">{c.manager}</div>
+                    <div className="champion-manager">{c.manager}{c.pts ? ` · ${c.pts} pts` : " · 2025/26 champions"}</div>
                   </div>
                 </div>
                 <span className="champion-points">{c.pts} pts</span>

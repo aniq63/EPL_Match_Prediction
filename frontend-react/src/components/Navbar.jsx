@@ -5,7 +5,7 @@ import { api } from "../api.js";
 const LINKS = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/analytics", label: "Analytics" },
-  { to: "/predictions", label: "ML Predictions" },
+  { to: "/predictions", label: "Predictions" },
   { to: "/history", label: "PL History" },
 ];
 

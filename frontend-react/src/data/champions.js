@@ -1,6 +1,7 @@
-// Static Premier League champions history (1992/93 – 2024/25).
+// Static Premier League champions history (1992/93 - 2025/26).
 // Ported from the legacy frontend's hardcoded winners list.
 export const CHAMPIONS = [
+  { season: "2025/26", team: "Arsenal", manager: "Mikel Arteta", pts: null },
   { season: "2024/25", team: "Liverpool", manager: "Arne Slot", pts: 82 },
   { season: "2023/24", team: "Manchester City", manager: "Pep Guardiola", pts: 91 },
   { season: "2022/23", team: "Manchester City", manager: "Pep Guardiola", pts: 89 },
