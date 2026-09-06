@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import PageHero from "../components/PageHero.jsx";
 import { Loader, ErrorBlock, EmptyBlock } from "../components/States.jsx";
-import { PipRow } from "../components/Pips.jsx";
 import TeamBadge from "../components/TeamBadge.jsx";
 import { api } from "../api.js";
 
@@ -9,11 +8,6 @@ function formatDate(iso) {
   if (!iso) return "TBD";
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-}
-
-function formToPips(formStr) {
-  if (!formStr) return [];
-  return formStr.split(",").map((r) => r.trim().toUpperCase());
 }
 
 function StandingsTable({ rows }) {
@@ -32,7 +26,6 @@ function StandingsTable({ rows }) {
             <th>L</th>
             <th>GD</th>
             <th>Pts</th>
-            <th>Form</th>
           </tr>
         </thead>
         <tbody>
@@ -51,7 +44,6 @@ function StandingsTable({ rows }) {
               <td>{row.lost}</td>
               <td>{row.goalDifference}</td>
               <td style={{ fontWeight: 700 }}>{row.points}</td>
-              <td><PipRow results={formToPips(row.form)} /></td>
             </tr>
           ))}
         </tbody>
@@ -98,6 +90,17 @@ function NewsGrid({ articles }) {
     <div className="grid grid-3">
       {articles.map((a, i) => (
         <a className="card news-card" href={a.url} target="_blank" rel="noreferrer" key={i}>
+          <div className="news-image-wrap">
+            {a.urlToImage ? (
+              <img
+                className="news-image"
+                src={a.urlToImage}
+                alt=""
+                loading="lazy"
+                onError={(event) => { event.currentTarget.parentElement.classList.add("news-image-missing"); }}
+              />
+            ) : <div className="news-image news-image-placeholder">PL</div>}
+          </div>
           <div className="news-source">{a.source?.name || "News"}</div>
           <div className="news-title">{a.title}</div>
           <div className="news-date">{formatDate(a.publishedAt)}</div>

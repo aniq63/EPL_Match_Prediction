@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { api } from "../api.js";
 
 const LINKS = [
   { to: "/", label: "Dashboard", end: true },
@@ -34,6 +35,14 @@ export default function Navbar() {
               to={link.to}
               end={link.end}
               onClick={() => setMobileOpen(false)}
+              onMouseEnter={() => {
+                if (link.to === "/analytics") api.getAnalytics().catch(() => {});
+                if (link.to === "/predictions") api.getPredictions().catch(() => {});
+              }}
+              onFocus={() => {
+                if (link.to === "/analytics") api.getAnalytics().catch(() => {});
+                if (link.to === "/predictions") api.getPredictions().catch(() => {});
+              }}
               className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
             >
               {link.label}

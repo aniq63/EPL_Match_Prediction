@@ -1,6 +1,7 @@
 // Base URL of the FastAPI backend (deployed on Railway).
 // Set VITE_API_BASE_URL in Vercel project settings / .env for local dev.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const requestCache = new Map();
 
 // Loud, one-time console warning if this build is running somewhere other than
 // localhost but is still pointed at a localhost backend — the #1 cause of
@@ -55,10 +56,21 @@ async function getJSON(path) {
   return res.json();
 }
 
+function getCachedJSON(path) {
+  if (!requestCache.has(path)) {
+    const request = getJSON(path).catch((error) => {
+      requestCache.delete(path);
+      throw error;
+    });
+    requestCache.set(path, request);
+  }
+  return requestCache.get(path);
+}
+
 export const api = {
-  getDashboard: () => getJSON("/api/dashboard"),
-  getAnalytics: () => getJSON("/api/analytics/"),
-  getPredictions: () => getJSON("/api/predictions/"),
+  getDashboard: () => getCachedJSON("/api/dashboard"),
+  getAnalytics: () => getCachedJSON("/api/analytics/"),
+  getPredictions: () => getCachedJSON("/api/predictions/"),
 };
 
 export { API_BASE_URL };
